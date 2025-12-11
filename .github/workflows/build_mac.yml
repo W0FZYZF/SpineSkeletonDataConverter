@@ -1,0 +1,40 @@
+name: Build Mac Version
+
+on:
+  workflow_dispatch: # 允许你手动点击按钮开始编译
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive # 这个项目可能包含子模块，必须递归下载
+
+    - name: Configure CMake
+      # 生成构建配置，指定 Release 模式以获得更小的体积和更快的速度
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build Project
+      # 开始编译
+      run: cmake --build build --config Release
+
+    - name: Organize Artifacts
+      # 查找并准备要上传的可执行文件
+      # 注意：Mac 上的 CMake Release 构建通常在 build 目录下，或者 build/Release 下
+      run: |
+        mkdir output
+        # 尝试查找生成的可执行文件并移动到 output 目录
+        find build -type f -perm +0111 -not -name ".*" -not -path "*/CMakeFiles/*" -exec cp {} output/ \;
+        echo "Found the following files:"
+        ls -l output/
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SpineSkeletonDataConverter-Mac
+        path: output/
